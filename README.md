@@ -232,11 +232,81 @@ episode success using only early telemetry.
 - Model: Logistic Regression with standardization
 - Metric: ROC AUC, accuracy
 
-This demonstrates that early dynamics contain strong predictive signals.
+This demonstrates that early dynamics contain strong predictive signals,
+and provides a reference point for evaluating more expressive models.
+
 
 Baseline results (K=50):
 - ROC AUC: ~0.88
 - Accuracy: ~0.82
+
+Linear baselines were later compared against nonlinear models to assess representational limits.
+
+## Feature engineering experiments
+
+To evaluate how additional behavioral information affects early outcome prediction,
+multiple feature representations were tested using the first K = 50 timesteps.
+
+### Feature sets evaluated
+
+1. **State-only (baseline)**
+   - `(position, velocity)`
+   - 2 × K features
+
+2. **State + action + reward**
+   - `(position, velocity, action, reward)`
+   - 4 × K features
+
+3. **State + dynamics + action (one-hot)**
+   - `(position, velocity)`
+   - first-order differences `(Δposition, Δvelocity)`
+   - action encoded as one-hot `(left, none, right)`
+   - 7 × K features
+
+### Findings
+
+- Adding raw `action` and `reward` did **not** improve performance for a linear model
+- Action encoded as ordinal values degraded performance
+- Derived dynamics (`Δposition`, `Δvelocity`) were more informative than raw rewards
+- Overall, a linear classifier saturated quickly, suggesting nonlinear structure in the data
+
+These results motivated evaluating a nonlinear baseline model.
+
+## Nonlinear baseline: Random Forest
+
+To test whether the predictive signal is nonlinear, a RandomForest classifier was trained
+using the enriched feature representation (state, dynamics, one-hot actions).
+
+### Model
+- RandomForestClassifier
+- 400 trees
+- class-weighted to address label imbalance
+- trained on early trajectory windows (K = 50)
+
+### Results (K = 50)
+
+- ROC AUC: **~0.94**
+- Accuracy: **~0.91**
+- Failure (negative class) precision improved substantially
+
+This confirms that early trajectory dynamics contain **strong nonlinear structure**
+that is not captured by linear models.
+
+### Key insight
+
+> Early success/failure prediction in MountainCar is best modeled with nonlinear decision boundaries,
+even when using only the first few dozen timesteps.
+
+
+## Model comparison summary (K = 50)
+
+| Model              | Features                          | ROC AUC | Accuracy |
+|--------------------|-----------------------------------|---------|----------|
+| Logistic Regression| position, velocity                | ~0.88   | ~0.82    |
+| Logistic Regression| state + action + dynamics         | ~0.84   | ~0.79    |
+| Random Forest      | state + dynamics + one-hot action | ~0.94   | ~0.91    |
+
+
 
 **Key insight**
 

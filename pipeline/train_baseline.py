@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import psycopg2
 from dotenv import load_dotenv
-
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, roc_auc_score, classification_report
@@ -128,17 +128,26 @@ def main():
     )
 
     # StandardScaler + LogisticRegression baseline
-    model = Pipeline(
-        steps=[
-            ("scaler", StandardScaler()),
-            ("clf", LogisticRegression(max_iter=2000, class_weight="balanced")),
-        ]
+    # logistic_reg = Pipeline(
+    #     steps=[
+    #         ("scaler", StandardScaler()),
+    #         ("clf", LogisticRegression(max_iter=2000, class_weight="balanced")),
+    #     ]
+    # )
+    rf = RandomForestClassifier(
+    n_estimators=400,
+    max_depth=None,
+    min_samples_leaf=2,
+    class_weight="balanced",
+    random_state=cfg.random_state,
+    n_jobs=-1,
     )
 
-    model.fit(X_train, y_train)
+    rf.fit(X_train, y_train)
 
-    prob = model.predict_proba(X_test)[:, 1]
+    prob = rf.predict_proba(X_test)[:, 1]
     pred = (prob >= 0.5).astype(int)
+
 
     acc = accuracy_score(y_test, pred)
     auc = roc_auc_score(y_test, prob)
@@ -152,8 +161,10 @@ def main():
     os.makedirs("artifacts", exist_ok=True)
     try:
         import joblib
-        joblib.dump(model, "artifacts/logreg_baseline.joblib")
-        print("Saved model to artifacts/logreg_baseline.joblib")
+        joblib.dump(rf, "artifacts/rf_baseline.joblib")
+        print("Saved model to artifacts/rf_baseline.joblib")
+
+
     except Exception:
         print("Tip: pip install joblib to save the model artifact.")
 
