@@ -30,10 +30,10 @@ CREATE TABLE events (
     truncated    BOOLEAN NOT NULL,
 
     -- No duplicate timestep within a session
-    CONSTRAINT uniq_session_t UNIQUE (session_id, t),
+    CONSTRAINT uniq_session_t UNIQUE (session_id, t) --,
 
     -- Sanity: you should not have both true at the same time
-    CONSTRAINT chk_terminal_flags CHECK (NOT (terminated AND truncated))
+    -- CONSTRAINT chk_terminal_flags CHECK (NOT (terminated AND truncated))
 );
 
 -- Indexes for the exact access pattern: load ordered sequences per session

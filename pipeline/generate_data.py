@@ -55,6 +55,11 @@ def choose_action(policy: str, action_rng: np.random.Generator, position: float,
         return 2 if velocity > 0 else 0
         # If the car is currently moving to the right, keep pushing right
         # If it’s moving to the left (or stationary), push left
+    if policy == "epsilon_heuristic":
+        eps = float(os.getenv("EPS", "0.10"))  # 10% random by default
+        if action_rng.random() < eps:
+            return int(action_rng.integers(0, 3))
+        return 2 if velocity > 0 else 0
     raise ValueError(f"Unknown policy: {policy}")
 
 def run_episode(env, episode_seed: int, action_rng: np.random.Generator, policy: str):
@@ -69,6 +74,11 @@ def run_episode(env, episode_seed: int, action_rng: np.random.Generator, policy:
 
         action = choose_action(policy, action_rng, position, velocity)
         obs, reward, terminated, truncated, _info = env.step(action)
+
+        # Normalize terminal flags: if terminated, treat it as success regardless of truncated
+        if terminated:
+            truncated = False
+
 
         reward_f = float(reward)
         return_sum += reward_f
@@ -86,7 +96,8 @@ def main(
     action_seed: int = 999,
     env_id: str = "MountainCar-v0",
     # policy: str = "random",
-    policy: str = "heuristic",
+    # policy: str = "heuristic",
+    policy: str = "epsilon_heuristic",
 ):
     # Gymnasium env
     env = gym.make(env_id)
