@@ -59,7 +59,7 @@ def fetch_episode_features(cur, cfg: Config) -> Tuple[np.ndarray, np.ndarray]:
     for session_id, success in sessions:
         cur.execute(
             """
-            SELECT t, position, velocity
+            SELECT t, position, velocity, action
             FROM events
             WHERE session_id = %s AND t < %s
             ORDER BY t;
@@ -72,10 +72,35 @@ def fetch_episode_features(cur, cfg: Config) -> Tuple[np.ndarray, np.ndarray]:
         if len(rows) != cfg.K:
             continue
 
-        feat = np.empty(cfg.K * 2, dtype=np.float32)
-        for i, (_t, pos, vel) in enumerate(rows):
-            feat[2 * i] = float(pos)
-            feat[2 * i + 1] = float(vel)
+        feat = np.empty(cfg.K * 7, dtype=np.float32)
+        prev_pos = None
+        prev_vel = None
+
+        for i, (_t, pos, vel, act) in enumerate(rows):
+            pos = float(pos)
+            vel = float(vel)
+
+            dpos = 0.0 if prev_pos is None else (pos - prev_pos)
+            dvel = 0.0 if prev_vel is None else (vel - prev_vel)
+
+            # one-hot for action (0/1/2)
+            a0 = 1.0 if act == 0 else 0.0
+            a1 = 1.0 if act == 1 else 0.0
+            a2 = 1.0 if act == 2 else 0.0
+
+            base = 7 * i
+            feat[base + 0] = pos
+            feat[base + 1] = vel
+            feat[base + 2] = dpos
+            feat[base + 3] = dvel
+            feat[base + 4] = a0
+            feat[base + 5] = a1
+            feat[base + 6] = a2
+
+            prev_pos = pos
+            prev_vel = vel
+
+
 
         X_list.append(feat)
         y_list.append(1 if success else 0)
