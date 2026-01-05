@@ -307,6 +307,33 @@ even when using only the first few dozen timesteps.
 | Random Forest      | state + dynamics + one-hot action | ~0.94   | ~0.91    |
 
 
+## Early prediction study (RandomForest, varying K)
+
+We evaluated how early an episode’s outcome can be predicted by training a RandomForest classifier on the first **K** timesteps of telemetry.
+Each episode is converted into a fixed-length feature vector using:
+
+- state: `(position, velocity)`
+- dynamics: `(Δposition, Δvelocity)`
+- action (one-hot): `(left, none, right)`
+
+Total features = `7 × K`.
+
+### Results
+
+| K (steps observed) | # episodes | ROC AUC | Accuracy | Failure Precision | Failure Recall | Failure F1 |
+|---:|---:|---:|---:|---:|---:|---:|
+| 10  | 1000 | 0.8215 | 0.9050 | 0.7143 | 0.4000 | 0.5128 |
+| 25  | 1000 | 0.9081 | 0.9150 | 0.6538 | 0.6800 | 0.6667 |
+| 50  | 1000 | 0.9353 | 0.9100 | 0.6207 | 0.7200 | 0.6667 |
+| 100 | 951  | 0.9395 | 0.9058 | 0.6000 | 0.8400 | 0.7000 |
+
+### Key takeaways
+
+- Predictive performance improves rapidly from **K=10 → K=25**, indicating that early trajectory dynamics contain strong signal.
+- Gains after **K≈50** show diminishing returns in ROC AUC.
+- Failure recall increases with larger K, showing a clear tradeoff between **early warning** (small K) and **failure coverage** (large K).
+- For K=100, fewer episodes are eligible because only sessions with `length_steps ≥ 100` are included.
+
 
 **Key insight**
 
